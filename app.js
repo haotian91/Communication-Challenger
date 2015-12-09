@@ -36,6 +36,13 @@ server.listen(PORT, function(){
     console.log('Express server is running at ' + PORT);
 });
 
+/*-- johnnyfive $ pixel ---*/
+pixel = require("node-pixel");
+five = require("johnny-five");
+
+var board = new five.Board();
+
+
 // Everything will be inside the on() function
 // .on() listens to any string you create ('gabriel-entered', 'shakti-arrived',...)
 // or two predefined events: 'connection' and 'disconnect'
@@ -53,97 +60,122 @@ server.listen(PORT, function(){
     
 
 //EVERYTHING HAPPENS INSIDE OF HERE 
-io.on('connection', function(socket){
-    console.log('a new client has connected');
+board.on("ready", function() {
 
-    socket.emit('welcome', 'welcome! your id is ' + socket.id);
-    
-    //get client' name from new client and send to all clients
-    socket.on('userName',function(data){
-        io.sockets.emit('helloeveryone',data)
+    var strip = new pixel.Strip({
+        data: 6,
+        length: 16,
+        board: this,
+        controller: "FIRMATA",
     });
 
-    //get message from clients and send message and id to all clients
-    socket.on('msg-to-server', function(data){
+    strip.on("ready", function() {
+        // do stuff with the strip here.
+        strip.color("rgb(255,255,255)"); // turns entire strip red using a hex colour
+        strip.show();
+    });
 
-        var myText = data;
+    io.on('connection', function(socket){
+        console.log('a new client has connected');
 
-        /*------new york times -------*/ 
+        socket.emit('welcome', 'welcome! your id is ' + socket.id);
         
-
-        /*------keywords-------*/    
-        alchemyapi.keywords("text", myText, {'sentiment': 1}, function(response){ 
-            var keyWords = response['keywords'];
-            var words = keyWords.length;
-            var num = Math.floor(Math.random()*words);
-            for (var i=0; i< keyWords.length; i++){
-                console.log("keywords: " + keyWords[i].text);
-            };
-            if(keyWords.length>=1){
-            // socket.emit('get-keywords', keyWords[num].text);
-            socket.emit('get-headline', keyWords[num]);
-            };
+        socket.on('time',function(data){
+            if(board.isReady){  
+                if(data<0){ data = 0 }
+                // console.log(data);
+                strip.color("rgb("+data+","+data+","+data+")"); 
+                strip.show();                
+            }; 
         });
-        
 
-        /*------sentiment-emoji-----*/
-        alchemyapi.sentiment('text',myText,{},function(response){
-            console.log("sentiment:" + response['docSentiment']['type']);
-            var judge = response['docSentiment']['type'];
-        
+        //get client' name from new client and send to all clients
+        socket.on('userName',function(data){
+            io.sockets.emit('helloeveryone',data)
+        });
 
+        //get message from clients and send message and id to all clients
+        socket.on('msg-to-server', function(data){
+
+            var myText = data;
+
+            /*------new york times -------*/ 
+            
+
+            /*------keywords-------*/    
+            alchemyapi.keywords("text", myText, {'sentiment': 1}, function(response){ 
+                var keyWords = response['keywords'];
+                var words = keyWords.length;
+                var num = Math.floor(Math.random()*words);
+                for (var i=0; i< keyWords.length; i++){
+                    console.log("keywords: " + keyWords[i].text);
+                };
+                if(keyWords.length>=1){
+                // socket.emit('get-keywords', keyWords[num].text);
+                socket.emit('get-headline', keyWords[num]);
+                };
+            });
+            
+
+            /*------sentiment-emoji-----*/
+            alchemyapi.sentiment('text',myText,{},function(response){
+                console.log("sentiment:" + response['docSentiment']['type']);
+                var judge = response['docSentiment']['type'];
+            
+
+                for(var i=0; i<clients.length;i++){
+                    if(clients[i].clientId == socket.id){
+                        if(judge == 'positive'){
+                            io.sockets.emit('msg-to-clients',{
+                            id:clients[i].customId,
+                            msg:data,
+                            emoji:'"file/'+Math.floor((Math.random() *5) + 11)+'.png"'
+                            })
+                        };
+
+                        if(judge == 'neutral'){
+                            io.sockets.emit('msg-to-clients',{
+                            id:clients[i].customId,
+                            msg:data,
+                            emoji:'"file/'+Math.floor((Math.random() *5) + 6)+'.png"'
+                            })
+                        };
+
+                        if(judge == 'negative'){
+                            io.sockets.emit('msg-to-clients',{
+                            id:clients[i].customId,
+                            msg:data,
+                            emoji:'"file/'+Math.floor((Math.random() *5) + 1)+'.png"'
+                            })
+                        };   
+                    };  
+                };      
+            });
+
+        });
+
+        //tell clients someone left
+        socket.on('disconnect', function(){
             for(var i=0; i<clients.length;i++){
                 if(clients[i].clientId == socket.id){
-                    if(judge == 'positive'){
-                        io.sockets.emit('msg-to-clients',{
-                        id:clients[i].customId,
-                        msg:data,
-                        emoji:'"file/'+Math.floor((Math.random() *5) + 11)+'.png"'
-                        })
-                    };
-
-                    if(judge == 'neutral'){
-                        io.sockets.emit('msg-to-clients',{
-                        id:clients[i].customId,
-                        msg:data,
-                        emoji:'"file/'+Math.floor((Math.random() *5) + 6)+'.png"'
-                        })
-                    };
-
-                    if(judge == 'negative'){
-                        io.sockets.emit('msg-to-clients',{
-                        id:clients[i].customId,
-                        msg:data,
-                        emoji:'"file/'+Math.floor((Math.random() *5) + 1)+'.png"'
-                        })
-                    };   
-                };  
-            };      
+                   io.sockets.emit('bye', clients[i].customId + ' left');
+                   clients.splice(i,1);
+                }
+            }
         });
 
-    });
 
-    //tell clients someone left
-    socket.on('disconnect', function(){
-        for(var i=0; i<clients.length;i++){
-            if(clients[i].clientId == socket.id){
-               io.sockets.emit('bye', clients[i].customId + ' left');
-               clients.splice(i,1);
-            }
-        }
-    });
+        //store client name
+        socket.on('storeClientInfo', function(data){
+            var clientInfo = new Object();
+            clientInfo.customId = data.customId;
+            clientInfo.clientId = socket.id;
+            clients.push(clientInfo);
+        });
 
-
-    //store client name
-    socket.on('storeClientInfo', function(data){
-        var clientInfo = new Object();
-        clientInfo.customId = data.customId;
-        clientInfo.clientId = socket.id;
-        clients.push(clientInfo);
     });
 
 });
-
 
 
 

@@ -9,6 +9,10 @@ app.main = (function() {
 
 	//Global
 	var socket;
+	var timeArray = [0,0];
+	var ongoing = new Date();
+	var ongoingTime = ongoing.getTime();
+	var bright =255;
 
 	//initializing the socket
 	var socketSetup = function(){
@@ -27,6 +31,8 @@ app.main = (function() {
 		//get message from server and show message to clients
 		socket.on('msg-to-clients', function(data){
 			$('#messages').append('<li>' + data.id + ' says: ' + data.msg + ' <img src=' + data.emoji + ' height="25px" width="25px" > ' + '</li>');	
+			var objDiv = document.getElementById("scroll");
+			objDiv.scrollTop = objDiv.scrollHeight;
 		});
 
 		//send message to clients someone left
@@ -60,6 +66,8 @@ app.main = (function() {
                     var headline = json.response.docs[numHead].headline.main;
                		console.log(headline);
                     $('#messages').append('<li id="word">' + headline + '</li>');
+                    var objDiv = document.getElementById("scroll");
+					objDiv.scrollTop = objDiv.scrollHeight;
                 };
             });
 			
@@ -77,6 +85,53 @@ app.main = (function() {
 
 	};
 
+	//get the number of times of typing
+	var getNumber = function(){		
+		$('#m').keypress(function(){
+			var d = new Date();
+			var t = d.getTime();
+			timeArray[0]=timeArray[1];
+			timeArray.splice(1,1,t);
+			// showNumber(i);
+
+			setTimeout(reset,4000);
+			// console.log(timeArray);
+			bright = bright - 20;
+			showNumber(bright);
+		});
+	};
+
+	//show the number on the led
+	var showNumber = function(bright){
+		if(timeArray[0]!=0){
+			var interval = timeArray[1]-timeArray[0];
+		}else{
+			var interval = 0;
+		};
+		socket.emit('time',bright);
+	};
+
+	//reset after few seconds when not typing
+	var reset = function(){
+		var resetTime = new Date();
+		var resetNow = resetTime.getTime();
+		if(resetNow-timeArray[1]>3999){
+			if(bright>=0){
+				for (var i=bright; i<250; i++){
+					socket.emit('time',i);
+					console.log(i);
+				}
+			}else{
+				for (var i=0; i<250; i++){
+					socket.emit('time',i);
+					console.log(i);
+				}
+			};
+
+			bright=255;
+		}
+	};
+
 	var attachEvents = function(){
 		$('#m').keypress(function(e){
 			if(e.keyCode == 13 && ($('#m').val().length != 0)){
@@ -91,13 +146,13 @@ app.main = (function() {
 				$('#m').val('');
 			}
 		});
-		var objDiv = document.getElementById("main-container");
-		objDiv.scrollTop = objDiv.scrollHeight;
+		
 	};
 
 	var init = function(){
 		console.log('Initializing app.');
 		socketSetup();
+		getNumber();
 		attachEvents();
 	};
 

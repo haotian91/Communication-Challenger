@@ -39,12 +39,18 @@ button {
 		bottom: 0; 
 		padding: 10px; 
 	}
+
+#scroll{
+overflow-y: scroll;
+
+}
       
 #messages { 
 		list-style-type: none; 
 		margin: 0; 
 		padding: 0; 
 		height: 90%; 
+		
 	}
 
 #messages li { 
