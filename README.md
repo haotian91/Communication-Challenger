@@ -1,2 +1,2 @@
 # Communication-Challenger
-Node.js + Socket + Johnny-five + Firmata + Adafruit NeoPixel
+Node.js + Alchemyapi + Socket + Johnny-five + Firmata + Adafruit NeoPixel
