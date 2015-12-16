@@ -1,6 +1,6 @@
 # Communication-Challenger
-#Node.js
-#Socket.io
+->Node.js
+->Socket.io
 #Alchemyapi
 #New York Times api
 #Giphy api
