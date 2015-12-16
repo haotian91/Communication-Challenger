@@ -64,7 +64,7 @@ board.on("ready", function() {
 
     var strip = new pixel.Strip({
         data: 6,
-        length: 16,
+        length: 30,
         board: this,
         controller: "FIRMATA",
     });
@@ -113,6 +113,7 @@ board.on("ready", function() {
                 if(keyWords.length>=1){
                 // socket.emit('get-keywords', keyWords[num].text);
                 socket.emit('get-headline', keyWords[num]);
+                socket.emit('get-gif', keyWords[num]);
                 };
             });
             

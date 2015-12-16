@@ -31,7 +31,7 @@ app.main = (function() {
 		//get message from server and show message to clients
 		socket.on('msg-to-clients', function(data){
 			$('#messages').append('<li>' + data.id + ' says: ' + data.msg + ' <img src=' + data.emoji + ' height="25px" width="25px" > ' + '</li>');	
-			var objDiv = document.getElementById("scroll");
+			var objDiv = document.getElementById("texts");
 			objDiv.scrollTop = objDiv.scrollHeight;
 		});
 
@@ -66,11 +66,26 @@ app.main = (function() {
                     var headline = json.response.docs[numHead].headline.main;
                		console.log(headline);
                     $('#messages').append('<li id="word">' + headline + '</li>');
-                    var objDiv = document.getElementById("scroll");
+                    var objDiv = document.getElementById("texts");
 					objDiv.scrollTop = objDiv.scrollHeight;
                 };
-            });
-			
+            });			
+		});
+
+		//get gif and show
+		socket.on('get-gif',function(data){
+			var thisUrl = 'http://api.giphy.com/v1/gifs/search?q='+ data.text + '&api_key=dc6zaTOxFJmzC';
+			$.getJSON(thisUrl,function(json){
+				console.log('gif received');
+				if(json.data.length>0){
+					var num = json.data.length;
+					var ranNum = Math.floor(Math.random()*num);
+					var gif = json.data[ranNum].images.fixed_height.url;
+
+					$('#gif').empty();
+					$('#gif').append('<img src="'+ gif +'" >');
+				};
+			});
 		});
 
 		// socket.on('get-sentiment', function(data){

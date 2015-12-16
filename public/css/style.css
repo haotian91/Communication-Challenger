@@ -44,6 +44,11 @@ button {
 overflow-y: scroll;
 
 }
+
+#texts {
+	height: 700px;
+	overflow: auto;
+}
       
 #messages { 
 		list-style-type: none; 
@@ -76,4 +81,11 @@ overflow-y: scroll;
 #word {
 	font-style: italic;
 	 color: blue;
+}
+
+#gif {
+	position: fixed;
+	right: 1px;
+	top:1px;
+	z-index: 2;
 }
